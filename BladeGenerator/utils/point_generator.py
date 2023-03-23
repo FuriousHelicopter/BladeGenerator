@@ -1,5 +1,5 @@
 import numpy as np
-from . import *
+from .utils import NACA4
 
 # CONSTANTS
 
@@ -27,18 +27,18 @@ class PointGenerator:
         t = float(NACA.t) / 100.0
 
         A4 = -0.1036 # For zero thick TE
-        if finite_TE:
-            A4 = -0.1015 # For finite thick TE
+        # if finite_TE:
+        #     A4 = -0.1015 # For finite thick TE
 
         x = np.linspace(0.0, 1.0, num_points+1)
-        if half_cosine_spacing:
-            beta = np.linspace(0.0, np.pi, num_points+1)
-            x = [(0.5*(1.0-np.cos(xx))) for xx in beta]  # Half cosine based spacing
+        # if half_cosine_spacing:
+        #     beta = np.linspace(0.0, np.pi, num_points+1)
+        #     x: np.ndarray = [(0.5*(1.0-np.cos(xx))) for xx in beta]  # Half cosine based spacing
 
-        yt = 5 * t * (A0 * np.sqrt(x) + A1 * x + A2 * np.power(x, 2) + A3 * np.power(x, 3) + A4 * np.power(x, 4))
+        yt: np.ndarray = 5 * t * (A0 * np.sqrt(x) + A1 * x + A2 * x**2 + A3 * x**3 + A4 * x**4)
 
-        xc1 = x[x <= p]
-        xc2 = x[x > p]
+        xc1: np.ndarray = x[x <= p]
+        xc2: np.ndarray = x[x > p]
 
         if p == 0:
             xu = x
@@ -48,12 +48,12 @@ class PointGenerator:
             zc = np.zeros(len(x))
 
         else:
-            yc1 = m / p**2 * x * (2*p - x)
-            yc2 = m / (1-p)**2 * (1-2*p + x) * (1-x)
+            yc1 = m / p**2 * xc1 * (2*p - xc1)
+            yc2 = m / (1-p)**2 * (1-2*p + xc2) * (1-xc2)
             zc = np.concatenate((yc1, yc2))
 
-            dyc1_dc = 2*m / p**2 * (p - x)
-            dyc2_dc = 2*m / (1-p)**2 * (p - x)
+            dyc1_dc = 2*m / p**2 * (p - xc1)
+            dyc2_dc = 2*m / (1-p)**2 * (p - xc2)
             dyc_dc = np.concatenate((dyc1_dc, dyc2_dc))
 
             theta = np.arctan(dyc_dc)
@@ -64,10 +64,13 @@ class PointGenerator:
             xl = x + yt * np.sin(theta)
             yl = zc - yt * np.cos(theta)
 
-        X = xu[::-1] + xl[1:]
-        Y = yu[::-1] + yl[1:]
+        X = np.concatenate((xu[::-1], xl[1:]))
+        Y = np.concatenate((yu[::-1], yl[1:]))
 
-        return np.concatenate((X, Y), axis=1).T
+        ret = np.empty((len(X), 2))
+        ret[:, 0] = X
+        ret[:, 1] = Y
+        return ret
             
 
 
