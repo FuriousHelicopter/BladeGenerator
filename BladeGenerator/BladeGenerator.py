@@ -2,20 +2,22 @@ import os, sys
 import pathlib
 import importlib
 import adsk.core, adsk.fusion, traceback
+
+# install packages
+def installPackages(packages_to_install = []):
+    try:
+        [importlib.import_module(_) for _ in packages_to_install]
+    except:
+        install_str = sys.path[0] +'\\Python\\python.exe -m pip install ' + ' '.join(packages_to_install)
+        os.system('cmd /c "' + install_str + '"')
+        [importlib.import_module(_) for _ in packages_to_install]
+
+installPackages(['numpy'])
+
+# Local imports
 from .loc_utils import *
 
 DIR = pathlib.Path(__file__).parent.resolve()
-print(DIR)
-
-# Import utils
-# print()
-# del sys.modules["utils"]
-# spec = importlib.util.spec_from_file_location("utils", f"{DIR}\\utils\\__init__.py")
-# utils = importlib.util.module_from_spec(spec)
-# sys.modules["utils"] = utils
-# spec.loader.exec_module(utils)
-# importlib.reload(utils)
-
 
 class NACAInterface():
     def __init__(self, app) -> None:
@@ -54,29 +56,10 @@ class NACAInterface():
         spline = sketch.sketchCurves.sketchFittedSplines.add(points)
 
 
-def installPackages(ui):
-    try:
-        import numpy
-    except:
-        packages_to_install = ['numpy']
-        for package in packages_to_install:
-            install_str = sys.path[0] +'\\Python\\python.exe -m pip install' + package
-            os.system('cmd /c "' + install_str + '"')
-        
-        try:
-            test = importlib.import_module(packages_to_install[0])
-            ui.messageBox("Installation succeeded !")
-        except:
-            ui.messageBox("Failed when importing numpy")
-
-
 def run(context):
     app = adsk.core.Application.get()
     ui = app.userInterface
-
-    # install packages
-    installPackages(ui)
-
+    
     # Make the user enter a NACA input
     interface = NACAInterface(app)
     interface.promptNACA()
