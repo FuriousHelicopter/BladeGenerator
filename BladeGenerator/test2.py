@@ -1,4 +1,4 @@
-from utils import *
+from loc_utils.NACA import *
 
 import matplotlib.pyplot as plt
 

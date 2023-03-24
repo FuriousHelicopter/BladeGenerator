@@ -1,9 +1,9 @@
 import numpy as np
-from .utils import NACA4
+from .NACA import NACA4
 
 # CONSTANTS
 
-defaultAirfoilHalfCosine = False
+defaultAirfoilHalfCosine = True
 defaultAirfoilFT = False
 
 # END CONSTANTS
@@ -11,12 +11,13 @@ defaultAirfoilFT = False
 
 
 class PointGenerator:
-    def __init__(self, NACA: NACA4, num_points: int):
+    def __init__(self, NACA: NACA4, num_points: int = 100, finite_TE : bool = defaultAirfoilFT, half_cosine_spacing : bool = defaultAirfoilHalfCosine):        
         self.NACA: NACA4 = NACA
         self.num_points: int = num_points
+        self.finite_TE = finite_TE
+        self.half_cosine_spacing = half_cosine_spacing
 
-    @staticmethod
-    def __getPointsNACA4(NACA: NACA4, num_points: int, finite_TE = defaultAirfoilFT, half_cosine_spacing = defaultAirfoilHalfCosine):
+    def __getPointsNACA4(self, NACA: NACA4, num_points: int):
         A0 = 0.2969
         A1 = -0.1260
         A2 = -0.3516
@@ -27,13 +28,13 @@ class PointGenerator:
         t = float(NACA.t) / 100.0
 
         A4 = -0.1036 # For zero thick TE
-        # if finite_TE:
-        #     A4 = -0.1015 # For finite thick TE
+        if self.finite_TE:
+            A4 = -0.1015 # For finite thick TE
 
         x = np.linspace(0.0, 1.0, num_points+1)
-        # if half_cosine_spacing:
-        #     beta = np.linspace(0.0, np.pi, num_points+1)
-        #     x: np.ndarray = [(0.5*(1.0-np.cos(xx))) for xx in beta]  # Half cosine based spacing
+        if self.half_cosine_spacing:
+            beta = np.linspace(0.0, np.pi, num_points+1)
+            x: np.ndarray = 0.5*(1.0 - np.cos(beta)) # Half cosine based spacing
 
         yt: np.ndarray = 5 * t * (A0 * np.sqrt(x) + A1 * x + A2 * x**2 + A3 * x**3 + A4 * x**4)
 
@@ -76,7 +77,7 @@ class PointGenerator:
 
     
     def getPoints(self) -> np.ndarray:
-        return PointGenerator.__getPointsNACA4(self.NACA, self.num_points)
+        return self.__getPointsNACA4(self.NACA, self.num_points)
 
         # string_list = self.dat[1:]
         # res = []

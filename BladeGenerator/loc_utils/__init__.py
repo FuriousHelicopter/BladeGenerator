@@ -1,2 +1,2 @@
 from .point_generator import PointGenerator
-from .utils import NACA4
+from .NACA import NACA4
