@@ -1,5 +1,5 @@
 import numpy as np
-from .NACA import NACA4
+from .naca import NACA4
 
 # CONSTANTS
 
