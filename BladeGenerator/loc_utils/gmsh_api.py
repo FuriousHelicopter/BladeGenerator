@@ -1,11 +1,12 @@
 import numpy as np
-from loc_utils import *
 
 import pathlib
 DIR = pathlib.Path(__file__).parent.resolve()
 
 import gmsh
 
+from .naca import NACA4
+from .point_generator import PointGenerator
 
 
 class MeshGenerator:

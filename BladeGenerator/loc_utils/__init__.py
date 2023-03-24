@@ -1,2 +1,3 @@
 from .point_generator import PointGenerator
-from .NACA import NACA4
+from .naca import NACA4
+from .gmsh_api import MeshGenerator
