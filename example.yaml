@@ -1,0 +1,12 @@
+radius: 5 #cm
+profiles:
+  - naca: 2412
+    angle: 5
+  - naca: 2412
+    angle: 10
+  - naca: 2412
+    angle: 15
+  - naca: 2412
+    angle: 20
+  - naca: 2412
+    angle: 25

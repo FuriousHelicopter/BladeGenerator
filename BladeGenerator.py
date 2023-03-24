@@ -6,13 +6,16 @@ import adsk.core, adsk.fusion, traceback
 # install packages
 def installPackages(packages_to_install):
     try:
-        [importlib.import_module(_) for _ in packages_to_install]
+        [importlib.import_module(pack[1]) for pack in packages_to_install]
     except:
-        install_str = sys.path[0] +'\\Python\\python.exe -m pip install ' + ' '.join(packages_to_install)
+        install_str = sys.path[0] +'\\Python\\python.exe -m pip install ' + ' '.join([pack[0] for pack in packages_to_install])
         os.system('cmd /c "' + install_str + '"')
-        [importlib.import_module(_) for _ in packages_to_install]
+        [importlib.import_module(pack[1]) for pack in packages_to_install]
 
-installPackages(['numpy', 'gmsh'])
+installPackages([('numpy', 'numpy'), ('gmsh', 'gmsh'), ('pyyaml', 'yaml')]) # list format : [(pip_name, import_name), ...]
+
+import numpy as np
+import yaml
 
 # Local imports
 from .loc_utils import *
@@ -26,21 +29,43 @@ class NACAInterface():
         self.ui = app.userInterface
         self.points = []  # TODO: replace with NACA object
 
-    def promptNACA(self) -> None:
-        naca_str = ''
-        while len(str(naca_str)) != 4:
-            naca_str, status = self.ui.inputBox('Enter NACA airfoil', 'NACA', '0012')
-            if status:
-                raise SystemExit(0)
-        self.naca = NACA4(naca_str)
+    def prompt_config_file(self) -> None:
 
-    def points_from_dat(self, filename):
-        with open(f'{DIR}\\{filename}', 'r') as f:
-            lines = f.readlines()
-        self.points = PointGenerator(lines).getPoints()
+        file_ok = False
+        while not file_ok:
 
-    def pointsFromNACA(self):
-        self.points = PointGenerator(self.naca).getPoints()
+            # Prepare file input dialog
+            fileDlg = self.ui.createFileDialog()
+            fileDlg.isMultiSelectEnabled = False
+            fileDlg.title = 'Select a .yml file'
+            fileDlg.filter = 'YAML Files (*.yml, *.yaml)'
+            
+            # Show file input dialog
+            dlgResult = fileDlg.showOpen()
+            if dlgResult == adsk.core.DialogResults.DialogOK:
+                self.filepath = fileDlg.filename
+            else:
+                raise SystemExit(1, 'No config file selected')
+            
+            # Confirmation dialog
+            status = self.ui.messageBox(f'Use {self.filepath} as config file ?', 'Confirm', adsk.core.MessageBoxButtonTypes.YesNoButtonType)
+
+            if status == adsk.core.DialogResults.DialogYes:
+                file_ok = True
+
+    def interpret_config_file(self):
+        with open(self.filepath, 'r') as stream:
+            self.config = yaml.safe_load(stream.read())
+        
+
+    # def points_from_dat(self, filename):
+    #     with open(f'{DIR}\\{filename}', 'r') as f:
+    #         lines = f.readlines()
+    #     self.points = PointGenerator(lines).getPoints()
+
+    @staticmethod
+    def pointsFromNACA(naca : NACA4):
+        return PointGenerator(naca).getPoints()
 
     def addNACAtoPlane(self, plane = None):
         design = self.app.activeProduct
@@ -95,7 +120,8 @@ def run(context):
 
     profileSketches = []
     for offset in range(0, 15, 5):
-        interface.promptNACA()
+        interface.prompt_config_file()
+        interface.interpret_config_file()
         interface.pointsFromNACA()
         newPlane = interface.createOffsetPlane(offset/10)
         profileSketches.append(interface.addNACAtoPlane(newPlane))
