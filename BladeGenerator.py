@@ -22,7 +22,7 @@ from .loc_utils import *
 
 DIR = pathlib.Path(__file__).parent.resolve()
 
-class NACAInterface():
+class BladeGeneratorMain():
     def __init__(self, app) -> None:
         self.naca : NACA4 = None
         self.app = app
@@ -140,7 +140,7 @@ class NACAInterface():
 def run(context):
     app = adsk.core.Application.get()
     
-    interface = NACAInterface(app)
+    interface = BladeGeneratorMain(app)
     
     # 1) Make the user input the config YAML file
     interface.prompt_config_file()
