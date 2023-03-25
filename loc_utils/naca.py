@@ -9,6 +9,10 @@ class NACA4:
         self.m = int(NACA_code[0])
         self.p = int(NACA_code[1])
         self.t = int(NACA_code[2:])
+        self.naca_code = int(NACA_code)
+
+    def __repr__(self):
+        return f"NACA4 profile : {self.naca_code}"
 
 # class NACA5:
 #     def __init__(self, NACA_str: str):

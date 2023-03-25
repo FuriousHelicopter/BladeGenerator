@@ -69,21 +69,29 @@ class NACAInterface():
         )
         return planes.add(planeInput)
 
-    def createPlanes(self):
+    def createOffsetPlanes(self):
         self.profiles = []
         profiles = self.config['profiles']
         for profile in profiles:
-            print(profile)
-            self.profiles.append(Profile(
+            res = Profile(
                 plane = self.createOffsetPlane(profile['offset']),
                 naca = NACA4(profile['naca']),
                 c = profile['c'],
-                angle = profile['angle']
-            ))
+                angle = profile['angle'],
+                offset = profile['offset']
+            )
+            self.profiles.append(res)
+            print(res)
 
     @staticmethod
     def pointsFromNACA(naca : NACA4):
         return PointGenerator(naca).getPoints()
+    
+    @staticmethod
+    def rotate(points: np.ndarray, angle: float):
+        angle_rad = angle / 180 * np.pi
+        derivative = np.tan(angle_rad)
+        return np.array([points[:, 0], points[:, 1] + derivative*points[:, 0]]).T # Works because leading edge is at (0, 0)
 
     def generateProfile(self, profile: Profile):
         design = self.app.activeProduct
@@ -94,6 +102,8 @@ class NACAInterface():
 
         # Define the points the spline with fit through.
         naca_points = self.pointsFromNACA(profile.naca)
+        naca_points = profile.c*naca_points # c scaling (corde)
+        naca_points = self.rotate(naca_points, profile.angle) # angle rotation
         for x, y in naca_points:
             points.add(adsk.core.Point3D.create(x, y, 0))
         
@@ -103,18 +113,12 @@ class NACAInterface():
 
     def generateProfiles(self):
         for profile in self.profiles:
-            self.generateProfile(profile)
-        
-        
+            self.generateProfile(profile) 
 
     # def points_from_dat(self, filename):
     #     with open(f'{DIR}\\{filename}', 'r') as f:
     #         lines = f.readlines()
     #     self.points = PointGenerator(lines).getPoints()
-
-    
-
-    
     
     def loftProfiles(self):
         # Lofts together all profiles
@@ -136,18 +140,19 @@ class NACAInterface():
 def run(context):
     app = adsk.core.Application.get()
     
-    # Make the user enter a NACA input
     interface = NACAInterface(app)
-    interface.prompt_config_file()
-    interface.interpret_config_file()
-    interface.createPlanes()
-    interface.generateProfiles()
-    interface.loftProfiles()
-
-    # profileSketches = []
-    # for offset in range(0, 15, 5):
-        # interface.pointsFromNACA()
-        # newPlane = interface.createOffsetPlane(offset/10)
-        # profileSketches.append(interface.addNACAtoPlane(newPlane))
-
     
+    # 1) Make the user input the config YAML file
+    interface.prompt_config_file()
+
+    # 2) Interpret the config file
+    interface.interpret_config_file()
+
+    # 3) Create the offset planes
+    interface.createOffsetPlanes()
+
+    # 4) Generate the profiles
+    interface.generateProfiles()
+
+    # 5) Link the profiles to form the final solid
+    interface.loftProfiles()

@@ -18,4 +18,4 @@ profiles:
   - naca: 2412
     angle: 5
     c: 0.8
-    offset: 10 # cm
+    offset: 5 # cm
