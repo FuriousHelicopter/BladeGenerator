@@ -1,17 +1,21 @@
-radius: 5 #cm
-profiles: # from inner to outer
+profiles:
   - naca: 2412
     angle: 25
     c: 2
+    offset: 0 # cm
   - naca: 2412
     angle: 20
     c: 1.8
+    offset: 1 # cm
   - naca: 2412
     angle: 15
     c: 1.5
+    offset: 2 # cm
   - naca: 2412
     angle: 10
     c: 1.2
+    offset: 3 # cm
   - naca: 2412
     angle: 5
     c: 0.8
+    offset: 10 # cm

@@ -56,32 +56,6 @@ class NACAInterface():
     def interpret_config_file(self):
         with open(self.filepath, 'r') as stream:
             self.config = yaml.safe_load(stream.read())
-        
-
-    # def points_from_dat(self, filename):
-    #     with open(f'{DIR}\\{filename}', 'r') as f:
-    #         lines = f.readlines()
-    #     self.points = PointGenerator(lines).getPoints()
-
-    @staticmethod
-    def pointsFromNACA(naca : NACA4):
-        return PointGenerator(naca).getPoints()
-
-    def addNACAtoPlane(self, plane = None):
-        design = self.app.activeProduct
-        rootComp = design.rootComponent  # root component (contains sketches, volumnes, etc)
-        if plane is None:
-            plane = rootComp.xYConstructionPlane
-        sketch = rootComp.sketches.add(plane)  # in the XZ plane
-        points = adsk.core.ObjectCollection.create()  # object collection that contains points
-
-        # Define the points the spline with fit through.
-        for x, y in self.points:
-            points.add(adsk.core.Point3D.create(x, y, 0))
-        
-        # draw the spline
-        spline = sketch.sketchCurves.sketchFittedSplines.add(points)
-        return sketch
 
     def createOffsetPlane(self, offset):
         # TODO: create new plane at offset	
@@ -94,8 +68,55 @@ class NACAInterface():
             adsk.core.ValueInput.createByReal(offset)
         )
         return planes.add(planeInput)
+
+    def createPlanes(self):
+        self.profiles = []
+        profiles = self.config['profiles']
+        for profile in profiles:
+            print(profile)
+            self.profiles.append(Profile(
+                plane = self.createOffsetPlane(profile['offset']),
+                naca = NACA4(profile['naca']),
+                c = profile['c'],
+                angle = profile['angle']
+            ))
+
+    @staticmethod
+    def pointsFromNACA(naca : NACA4):
+        return PointGenerator(naca).getPoints()
+
+    def generateProfile(self, profile: Profile):
+        design = self.app.activeProduct
+        rootComp = design.rootComponent  # root component (contains sketches, volumnes, etc)
+        plane = profile.plane
+        sketch = rootComp.sketches.add(plane)  # in the XZ plane
+        points = adsk.core.ObjectCollection.create()  # object collection that contains points
+
+        # Define the points the spline with fit through.
+        naca_points = self.pointsFromNACA(profile.naca)
+        for x, y in naca_points:
+            points.add(adsk.core.Point3D.create(x, y, 0))
+        
+        # draw the spline
+        spline = sketch.sketchCurves.sketchFittedSplines.add(points)
+        profile.sketch = sketch
+
+    def generateProfiles(self):
+        for profile in self.profiles:
+            self.generateProfile(profile)
+        
+        
+
+    # def points_from_dat(self, filename):
+    #     with open(f'{DIR}\\{filename}', 'r') as f:
+    #         lines = f.readlines()
+    #     self.points = PointGenerator(lines).getPoints()
+
     
-    def loftProfiles(self, profileSketches):
+
+    
+    
+    def loftProfiles(self):
         # Lofts together all profiles
         # TODO: see if loft is the best way to do this
         design = self.app.activeProduct
@@ -104,7 +125,7 @@ class NACAInterface():
         loftFeats = rootComp.features.loftFeatures
         loftInput = loftFeats.createInput(adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         loftSectionsObj = loftInput.loftSections
-        [loftSectionsObj.add(sketch.profiles.item(0)) for sketch in profileSketches]
+        [loftSectionsObj.add(sketch.profiles.item(0)) for sketch in [profile.sketch for profile in self.profiles]]
 
         loftInput.isSolid = True
         loftInput.isClosed = False
@@ -117,13 +138,16 @@ def run(context):
     
     # Make the user enter a NACA input
     interface = NACAInterface(app)
+    interface.prompt_config_file()
+    interface.interpret_config_file()
+    interface.createPlanes()
+    interface.generateProfiles()
+    interface.loftProfiles()
 
-    profileSketches = []
-    for offset in range(0, 15, 5):
-        interface.prompt_config_file()
-        interface.interpret_config_file()
-        interface.pointsFromNACA()
-        newPlane = interface.createOffsetPlane(offset/10)
-        profileSketches.append(interface.addNACAtoPlane(newPlane))
+    # profileSketches = []
+    # for offset in range(0, 15, 5):
+        # interface.pointsFromNACA()
+        # newPlane = interface.createOffsetPlane(offset/10)
+        # profileSketches.append(interface.addNACAtoPlane(newPlane))
+
     
-    interface.loftProfiles(profileSketches)
