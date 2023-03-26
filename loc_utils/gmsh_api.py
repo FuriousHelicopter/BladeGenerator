@@ -17,28 +17,11 @@ class MeshGenerator:
         self.points = None
         self.n = n
         self.code = None
-        self.file_writen = False
-        self.geo_loaded = False
-        self.mesh_generated = False
 
-    def getPoints(self) -> None:
-        if self.points is None:
-            self.points = PointGenerator(self.NACA, self.n).getPoints()
+    def __getPoints(self) -> None:
+        self.points = PointGenerator(self.NACA, self.n).getPoints()
 
-    # def loadPoints(self) -> None:
-    #     if self.points is None:
-    #         self.getPoints()
-    #     self.points = np.round(self.points, 8)
-    #     for i, (x, y) in enumerate(self.points):
-    #         gmsh.model.geo.addPoint(x, y, 0, self.h, i)
-    #     n = len(self.points)
-    #     gmsh.model.geo.addSpline(list(range(len(self.points)))+[0], n+100)
-    #     gmsh.model.geo.addCurveLoop([n+100], n + 200)
-    #     gmsh.model.geo.addPlaneSurface([n + 200], n + 300)
-
-    def loadGEOCode(self) -> None:
-        if self.points is None:
-            self.getPoints()
+    def __loadGEOCode(self) -> None:
         self.points = np.round(self.points, 8)
         code = f"h = {self.h};\n"
         for i, (x, y) in enumerate(self.points):
@@ -51,35 +34,33 @@ class MeshGenerator:
         code += f"Plane Surface({n+2}) = {{{n+1}}};\n"
         self.code = code
 
-    def writeGEO(self) -> None:
-        if self.code is None:
-            self.loadGEOCode()
+    def __writeGEO(self) -> None:
         with open(f"{DIR}\\blade.geo", "w") as f:
             f.write(self.code)
         self.file_writen = True
 
-    def loadGEO(self) -> None:
-        if not self.file_writen:
-            self.writeGEO()
-        # load geo file
+    def __loadGEO(self) -> None:
         print(f"{DIR}\\blade.geo")
         gmsh.open(f"{DIR}\\blade.geo")
 
-    def generateMesh(self) -> None:
-        if not self.geo_loaded:
-            self.loadGEO()
+    def __generateMesh(self) -> None:
         gmsh.model.geo.synchronize()
         gmsh.model.mesh.generate(2)
         self.mesh_generated = True
 
-    def saveMesh(self, filename: str) -> None:
-        if not self.mesh_generated:
-            self.generateMesh()
+    def __saveMesh(self, filename: str) -> None:
         gmsh.write(filename)
 
+    def generateAndWriteMesh(self, filename: str) -> None:
+        self.__getPoints()
+        self.__loadGEOCode()
+        self.__writeGEO()
+        self.__loadGEO()
+        self.__generateMesh()
+        self.__saveMesh(filename)
+
 if __name__ == "__main__":
-    MeshGenerator(0.01, NACA4(2412)).saveMesh('test.msh')
-    # Show the mesh
+    MeshGenerator(0.01, NACA4(2412)).generateAndWriteMesh('test.msh')
     gmsh.fltk.run()
     gmsh.finalize()
     
