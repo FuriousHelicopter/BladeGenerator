@@ -95,56 +95,77 @@ class BladeGeneratorMain():
             profile.angle # angle rotation
         )
 
-    def generateProfile(self, profile: Profile):
+    def __generateProfile(self, profile: Profile):
+        """Generates a profile in the 3D modeling from a profile object."""
+
         design = self.app.activeProduct
         rootComp = design.rootComponent  # root component (contains sketches, volumnes, etc)
+        
+        # Getting the plane object created earlier
         plane = profile.plane
+        
+        # Creating a sketch from the plane
         sketch = rootComp.sketches.add(plane)  # in the XZ plane
+        # Creating a point collection
         points = adsk.core.ObjectCollection.create()  # object collection that contains points
 
         # Define the points the spline with fit through.
-        naca_points = self.transformedPointsFromProfile(profile)
+        naca_points = self.transformedPointsFromProfile(profile) # TODO : Implement this method in the profile object
 
+        # Generating the rails points to guide the future loft (took the 2 outer points)
         self.rails[0].add(adsk.core.Point3D.create(*naca_points[0], profile.offset))
         self.rails[1].add(adsk.core.Point3D.create(*naca_points[profile.n-1], profile.offset))
 
+        # Adding the points to the collection (i.e. to the sketch)
         for x, y in naca_points:
             p = adsk.core.Point3D.create(x, y, 0)
             points.add(p)
 
-        # draw the spline
+        # Drawing the spline
         spline = sketch.sketchCurves.sketchFittedSplines.add(points)
         profile.sketch = sketch
 
     def generateProfiles(self):
         for profile in self.profiles:
-            self.generateProfile(profile) 
+            self.__generateProfile(profile) 
 
         # generate rails
         design = self.app.activeProduct
         rootComp = design.rootComponent  # root component (contains sketches, volumnes, etc)
         verticalSketch = rootComp.sketches.add(rootComp.xYConstructionPlane)
-        [verticalSketch.sketchCurves.sketchFittedSplines.add(pts) for pts in self.rails]
+        self.c1, self.c2 = [verticalSketch.sketchCurves.sketchFittedSplines.add(pts) for pts in self.rails]
+        
 
     # def points_from_dat(self, filename):
     #     with open(f'{DIR}\\{filename}', 'r') as f:
     #         lines = f.readlines()
     #     self.points = PointGenerator(lines).getPoints()
     
-    def loftProfiles(self):
-        # Lofts together all profiles
-        # TODO: see if loft is the best way to do this
+    def loftProfiles(self) -> None:
+        """Lofts together all profiles i.e. form the solid defined by the profiles"""
+
         design = self.app.activeProduct
         rootComp = design.rootComponent
         
+        # Creating the different objects to call the loft function
         loftFeats = rootComp.features.loftFeatures
         loftInput = loftFeats.createInput(adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+    
+        # Create rails (guides) in order to avoid creating funny looking shapes when lofting
+        loftRails = loftInput.centerLineOrRails
+        loftRails.addRail(self.c1)
+        loftRails.addRail(self.c2)
+
+        # Adding all the profiles to the loft
         loftSectionsObj = loftInput.loftSections
         [loftSectionsObj.add(sketch.profiles.item(0)) for sketch in [profile.sketch for profile in self.profiles]]
 
+        # Setting the loft parameters
         loftInput.isSolid = True
         loftInput.isClosed = False
         loftInput.isTangentEdgesMerged = True
+
+        # Creating the loft
         loftFeats.add(loftInput)
 
 
@@ -166,4 +187,4 @@ def run(context):
     interface.generateProfiles()
 
     # 5) Link the profiles to form the final solid
-    # interface.loftProfiles()
+    interface.loftProfiles()
