@@ -27,10 +27,10 @@ class BladeGeneratorMain():
         self.naca : NACA4 = None
         self.app = app
         self.ui = app.userInterface
-        self.points = []  # TODO: replace with NACA object
+        #self.points = []  # TODO: replace with NACA object
+        self.rails = (adsk.core.ObjectCollection.create(), adsk.core.ObjectCollection.create())  # Two extrusion rails, collection of Points
 
     def prompt_config_file(self) -> None:
-
         file_ok = False
         while not file_ok:
 
@@ -84,14 +84,16 @@ class BladeGeneratorMain():
             print(res)
 
     @staticmethod
-    def pointsFromNACA(naca : NACA4):
-        return PointGenerator(naca).getPoints()
-    
-    @staticmethod
     def rotate(points: np.ndarray, angle: float):
         angle_rad = angle / 180 * np.pi
         derivative = np.tan(angle_rad)
         return np.array([points[:, 0], points[:, 1] + derivative*points[:, 0]]).T # Works because leading edge is at (0, 0)
+
+    def transformedPointsFromProfile(self, profile: Profile):
+        return self.rotate(
+            profile.generatePoints() * profile.c, # c scaling (corde)
+            profile.angle # angle rotation
+        )
 
     def generateProfile(self, profile: Profile):
         design = self.app.activeProduct
@@ -101,12 +103,15 @@ class BladeGeneratorMain():
         points = adsk.core.ObjectCollection.create()  # object collection that contains points
 
         # Define the points the spline with fit through.
-        naca_points = self.pointsFromNACA(profile.naca)
-        naca_points = profile.c*naca_points # c scaling (corde)
-        naca_points = self.rotate(naca_points, profile.angle) # angle rotation
+        naca_points = self.transformedPointsFromProfile(profile)
+
+        self.rails[0].add(adsk.core.Point3D.create(*naca_points[0], profile.offset))
+        self.rails[1].add(adsk.core.Point3D.create(*naca_points[profile.n-1], profile.offset))
+
         for x, y in naca_points:
-            points.add(adsk.core.Point3D.create(x, y, 0))
-        
+            p = adsk.core.Point3D.create(x, y, 0)
+            points.add(p)
+
         # draw the spline
         spline = sketch.sketchCurves.sketchFittedSplines.add(points)
         profile.sketch = sketch
@@ -114,6 +119,12 @@ class BladeGeneratorMain():
     def generateProfiles(self):
         for profile in self.profiles:
             self.generateProfile(profile) 
+
+        # generate rails
+        design = self.app.activeProduct
+        rootComp = design.rootComponent  # root component (contains sketches, volumnes, etc)
+        verticalSketch = rootComp.sketches.add(rootComp.xYConstructionPlane)
+        [verticalSketch.sketchCurves.sketchFittedSplines.add(pts) for pts in self.rails]
 
     # def points_from_dat(self, filename):
     #     with open(f'{DIR}\\{filename}', 'r') as f:
@@ -155,4 +166,4 @@ def run(context):
     interface.generateProfiles()
 
     # 5) Link the profiles to form the final solid
-    interface.loftProfiles()
+    # interface.loftProfiles()
