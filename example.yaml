@@ -1,5 +1,5 @@
 blades:
-  - angle: 0
+  - angle: 30
     profiles:
     - naca: 2412
       angle: -25

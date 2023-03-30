@@ -16,7 +16,7 @@ class Blade():
         self.ui = app.userInterface
         self.rails = (adsk.core.ObjectCollection.create(), adsk.core.ObjectCollection.create())  # Two extrusion rails, collection of Points
         self.angle = blade_config['angle']
-        self.profiles = blade_config['profiles']
+        self.profiles_dict = blade_config['profiles']
 
     def __createOffsetPlane(self, offset) -> adsk.fusion.ConstructionPlane:
         """Create a new offset plane and return it."""
@@ -33,34 +33,16 @@ class Blade():
     def __createOffsetPlanesAndGenerateProfilesObject(self):
         """Create all the offset planes from the interpretation of the self.profiles dict."""
         self.profiles = []
-        profiles = self.profiles
-        for profile in profiles:
+        for profile_config in self.profiles_dict:
             res = Profile(
-                plane = self.__createOffsetPlane(profile['offset']),
-                naca = NACA4(profile['naca']),
-                c = profile['c'],
-                angle = profile['angle'],
-                offset = profile['offset'],
-                colinear_offset = profile['colinear_offset']
+                plane = self.__createOffsetPlane(profile_config['offset']),
+                naca = NACA4(profile_config['naca']),
+                c = profile_config['c'],
+                angle = profile_config['angle'],
+                offset = profile_config['offset'],
+                colinear_offset = profile_config['colinear_offset']
             )
             self.profiles.append(res)
-            print(res)
-
-    # <!-- DEPRECATED -->
-
-    # @staticmethod
-    # def rotate(points: np.ndarray, angle: float): # TODO : implement it in Profile class
-    #     angle_rad = angle / 180 * np.pi
-    #     derivative = np.tan(angle_rad)
-    #     return np.array([points[:, 0], points[:, 1] + derivative*points[:, 0]]).T # Works because leading edge is at (0, 0) 
-
-    # def transformedPointsFromProfile(self, profile: Profile): # TODO : implement it in Profile class
-    #     return self.rotate(
-    #         profile.generatePoints() * profile.c, # c scaling (corde)
-    #         profile.angle # angle rotation
-    #     )
-
-    # <!-- END DEPRECATED -->
 
     def __generateProfile(self, profile: Profile):
         """Generates a profile in the 3D modeling from a profile object."""
@@ -82,6 +64,7 @@ class Blade():
         # Generating the rails points to guide the future loft (took the 2 outer points)
         self.rails[0].add(adsk.core.Point3D.create(*naca_points[0], profile.offset))
         self.rails[1].add(adsk.core.Point3D.create(*naca_points[profile.n-1], profile.offset))
+        print("Point added to rails")
 
         # Adding the points to the collection (i.e. to the sketch)
         for x, y in naca_points:
@@ -89,11 +72,12 @@ class Blade():
             points.add(p)
 
         # Drawing the spline
-        spline = sketch.sketchCurves.sketchFittedSplines.add(points)
+        sketch.sketchCurves.sketchFittedSplines.add(points)
         profile.sketch = sketch
 
     def __generateProfiles(self):
         """Generates all the profiles in the 3D modeling from the self.config dict."""
+        print(self.profiles)
         for profile in self.profiles:
             self.__generateProfile(profile) 
 
@@ -101,8 +85,8 @@ class Blade():
         design = self.app.activeProduct
         rootComp = design.rootComponent  # root component (contains sketches, volumnes, etc)
         verticalSketch = rootComp.sketches.add(rootComp.xYConstructionPlane)
-        print(self.rails)
         self.c1, self.c2 = [verticalSketch.sketchCurves.sketchFittedSplines.add(pts) for pts in self.rails]
+
         
     
     def __loftProfiles(self) -> None:
@@ -146,4 +130,4 @@ class Blade():
         self.__createOffsetPlanesAndGenerateProfilesObject()
         self.__generateProfiles()
         self.__loftProfiles()
-        # self.__rotateSelf() # TODO : implement it
+        self.__rotateSelf() # TODO : implement it
