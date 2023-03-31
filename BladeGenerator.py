@@ -59,8 +59,9 @@ class MainHandler():
 
     def generateBlades(self) -> None:
         blades_config = self.config['blades']
+        intermediate_profiles: int = self.config['intermediate_profiles']
         for blade_config in blades_config:
-            self.blades.append(Blade(self.app, blade_config))
+            self.blades.append(Blade(self.app, blade_config, intermediate_profiles))
         for blade in self.blades:
             blade.build()
         

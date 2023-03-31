@@ -4,18 +4,47 @@ import numpy as np
 # Local imports
 from .naca import NACA4
 from .profile import Profile
+from .profile_config import ProfileConfig
+
+RAIL_NS = ["0", "X-1", "int(X//2)", "3*int(X//2)", "int(X//4)", "3*int(X//4)", "5*int(X//4)", "7*int(X//4)"] # where X is half the number of points in the profile
 
 class Blade():
-    def __init__(self, app, blade_config: dict) -> None:
+    def __init__(self, app, blade_config: dict, intermediate_profiles: int) -> None:
         # Blade configuration
         self.angle: float = blade_config['angle'] / 180 * np.pi
         self.profiles_dict: dict = blade_config['profiles']
         self.colinear_blade_offset: float = blade_config['colinear_blade_offset']
+        self.intermediate_profiles: int = intermediate_profiles
         
         # API objects
         self.app = app
         self.ui = app.userInterface
-        self.rails = (adsk.core.ObjectCollection.create(), adsk.core.ObjectCollection.create())  # Two extrusion rails, collection of Points
+        self.rails = [adsk.core.ObjectCollection.create() for _ in range(len(RAIL_NS))]  # len(RAIL_NS) extrusion rails, collection of Points
+        
+        self.rail_splines = []
+        self.profiles_config: list[ProfileConfig] = []
+
+    def __load_config(self) -> None:
+        """Create profileConfig objects from the self.profiles_dict and create self.profilesConfig list."""
+        for profile_config in self.profiles_dict:
+            self.profiles_config.append(ProfileConfig(
+                radial_offset = profile_config['offset'],
+                naca = NACA4(profile_config['naca']),
+                c = profile_config['c'],
+                angle = profile_config['angle'],
+                colinear_offset = profile_config['colinear_offset']
+            ))
+
+    def __interpolate_profiles(self) -> None:
+        """Interpolate the profiles and complete the self.profilesConfig list."""
+        if self.intermediate_profiles == 0:
+            return
+        for i in range(len(self.profiles_config) - 1):
+            for j in range(self.intermediate_profiles):
+                j += 1
+                t = j / (self.intermediate_profiles + 1)
+                self.profiles_config.append(self.profiles_config[i].interpolate(self.profiles_config[i + 1], t))
+        self.profiles_config.sort(key=lambda x: x.radial_offset, reverse=False)
         
 
     def __createOffsetPlane(self, offset) -> adsk.fusion.ConstructionPlane:
@@ -33,14 +62,14 @@ class Blade():
     def __createOffsetPlanesAndGenerateProfilesObject(self) -> None:
         """Create all the offset planes from the interpretation of the self.profiles dict."""
         self.profiles = []
-        for profile_config in self.profiles_dict:
+        for profile_config in self.profiles_config:
             res = Profile(
-                plane = self.__createOffsetPlane(profile_config['offset']),
-                naca = NACA4(profile_config['naca']),
-                c = profile_config['c'],
-                angle = profile_config['angle'],
-                offset = profile_config['offset'],
-                colinear_offset = profile_config['colinear_offset']
+                plane = self.__createOffsetPlane(profile_config.radial_offset),
+                naca = profile_config.naca,
+                c = profile_config.c,
+                angle = profile_config.angle,
+                radial_offset = profile_config.radial_offset,
+                colinear_offset = profile_config.colinear_offset
             )
             self.profiles.append(res)
 
@@ -62,8 +91,9 @@ class Blade():
         naca_points = profile.getPoints()
 
         # Generating the rails points to guide the future loft (took the 2 outer points)
-        self.rails[0].add(adsk.core.Point3D.create(*naca_points[0], profile.offset))
-        self.rails[1].add(adsk.core.Point3D.create(*naca_points[profile.n-1], profile.offset))
+        for i, rail in enumerate(self.rails):
+            j = eval(RAIL_NS[i].replace('X', 'profile.n'))
+            rail.add(adsk.core.Point3D.create(*naca_points[j], profile.radial_offset))
 
         # Adding the points to the collection (i.e. to the sketch)
         for x, y in naca_points:
@@ -83,7 +113,7 @@ class Blade():
         design = self.app.activeProduct
         rootComp = design.rootComponent  # root component (contains sketches, volumnes, etc)
         self.verticalSketch = rootComp.sketches.add(rootComp.xYConstructionPlane)
-        self.c1, self.c2 = [self.verticalSketch.sketchCurves.sketchFittedSplines.add(pts) for pts in self.rails]
+        self.rail_splines = [self.verticalSketch.sketchCurves.sketchFittedSplines.add(rail_pts) for rail_pts in self.rails]
 
         
     
@@ -99,8 +129,8 @@ class Blade():
     
         # Create rails (guides) in order to avoid creating funny looking shapes when lofting
         loftRails = loftInput.centerLineOrRails
-        loftRails.addRail(self.c1)
-        loftRails.addRail(self.c2)
+        for rail_spline in self.rail_splines:
+            loftRails.addRail(rail_spline)
 
         # Adding all the profiles to the loft
         loftSectionsObj = loftInput.loftSections
@@ -158,6 +188,8 @@ class Blade():
 
     def build(self) -> None:
         """Builds the blade from the config dict."""
+        self.__load_config()
+        self.__interpolate_profiles()
         self.__createOffsetPlanesAndGenerateProfilesObject()
         self.__generateProfiles()
         self.__hideConstruction()

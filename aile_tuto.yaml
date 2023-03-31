@@ -1,21 +1,30 @@
-profiles:
-  - naca: 1408
-    angle: -30
-    c: 0.8
-    offset: 0 # cm
-  - naca: 1408
-    angle: -30
-    c: 1.6
-    offset: 0.8 # cm
-  - naca: 1408
-    angle: -15
-    c: 1.6
-    offset: 3 # cm
-  - naca: 1408
-    angle: 0
-    c: 0.8
-    offset: 6 # cm
-  - naca: 1408
-    angle: 0
-    c: 0.2
-    offset: 7 # cm
+intermediate_profiles: 1 # 1 profile added between every profiles
+blades:
+  - angle: 30
+    colinear_blade_offset: 1 #cm
+    profiles:
+    - naca: 1408
+      angle: -30
+      c: 0.8
+      offset: 0 # cm
+      colinear_offset: 0 #cm
+    - naca: 1408
+      angle: -30
+      c: 1.6
+      offset: 0.8 # cm
+      colinear_offset: 0 #cm
+    - naca: 1408
+      angle: -15
+      c: 1.6
+      offset: 3 # cm
+      colinear_offset: 0 #cm
+    - naca: 1408
+      angle: 0
+      c: 0.8
+      offset: 6 # cm
+      colinear_offset: 0 #cm
+    - naca: 1408
+      angle: 0
+      c: 0.2
+      offset: 7 # cm
+      colinear_offset: 0 #cm
