@@ -6,8 +6,8 @@ from .naca import NACA4
 from .profile import Profile
 from .profile_config import ProfileConfig
 
-RAIL_NS = ["0", "X-1", "int(X//2)", "3*int(X//2)", "int(X//4)", "3*int(X//4)", "5*int(X//4)", "7*int(X//4)"] # where X is half the number of points in the profile
-
+RAIL_NS = ["0", "X-1"] # where X is half the number of points in the profile
+# "int(X//2)", "3*int(X//2)", "int(X//4)", "3*int(X//4)", "5*int(X//4)", "7*int(X//4)"
 class Blade():
     def __init__(self, app, blade_config: dict, intermediate_profiles: int) -> None:
         # Blade configuration
