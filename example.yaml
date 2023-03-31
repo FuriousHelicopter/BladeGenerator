@@ -1,3 +1,4 @@
+intermediate_profiles: 0 # 1 profile added between every profiles
 blades:
   - angle: 30
     colinear_blade_offset: 1 #cm

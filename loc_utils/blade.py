@@ -147,7 +147,7 @@ class Blade():
     def __translateSelf(self) -> None:
         # radius_offsets = [profile.offset for profile in self.profiles]
         # closest_profile = self.profiles[np.argmin(radius_offsets)]
-        closest_profile = min(self.profiles, key=lambda profile: profile.offset)
+        closest_profile = min(self.profiles, key=lambda profile: profile.radial_offset)
         closest_delta_x = np.max(closest_profile.points[::, 0]) - np.min(closest_profile.points[::, 0])
         print(closest_delta_x)
         moveFeats = self.app.activeProduct.rootComponent.features.moveFeatures
