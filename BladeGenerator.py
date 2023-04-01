@@ -60,13 +60,68 @@ class MainHandler():
     def generateBlades(self) -> None:
         blades_config = self.config['blades']
         intermediate_profiles: int = self.config['intermediate_profiles']
-        for blade_config in blades_config:
-            self.blades.append(Blade(self.app, blade_config, intermediate_profiles))
+        for i, blade_config in enumerate(blades_config):
+            self.blades.append(Blade(self.app, blade_config, intermediate_profiles, i))
         for blade in self.blades:
             blade.build()
+
+    def generateShaftHole(self) -> None:
+        """Generates the shaft cylinder."""
+
+        # Gather & check inner shaft diameter data
+        inner_shaft_diameter: float = self.config['inner_shaft_diameter']
+        max_inner_radius = max([blade.min_r for blade in self.blades])
+        if inner_shaft_diameter > 2*max_inner_radius:
+            status = self.ui.messageBox(f'Inner shaft diameter ({inner_shaft_diameter}cm) is smaller than the blades inner profile ({2*max_inner_radius}cm). It will result in the shaft not possible to connect / non functionnal propeller. Do you want to stop process and correct the values ? (if yes, the process will terminate : you need to increase the radial offset of the blades so the min of them will be greater than the inner radius)', 'Warning', adsk.core.MessageBoxButtonTypes.YesNoButtonType)
+            if status == adsk.core.DialogResults.DialogYes:
+                self.ui.messageBox(f'Process aborted on incorrect inner shaft diameter!', 'Error', adsk.core.MessageBoxButtonTypes.OKButtonType)
+                raise SystemExit(1, 'Incorrect inner shaft diameter')
+
+        # Gather & check outer shaft diameter data
+        min_outer_shaft_diameter: float = max([blade.min_outer_shaft_radius * 2 for blade in self.blades])
+        outer_shaft_diameter_config: str = self.config['outer_shaft_diameter']
+        outer_shaft_diameter: float = None
+        if outer_shaft_diameter_config == 'auto':
+            outer_shaft_diameter = min_outer_shaft_diameter
+        else:
+            outer_shaft_diameter: float = float(outer_shaft_diameter_config)
+        if outer_shaft_diameter < min_outer_shaft_diameter:
+            status = self.ui.messageBox(f'Outer shaft diameter ({outer_shaft_diameter}cm) is smaller than the blades inner profile ({min_outer_shaft_diameter}cm). It will result a non aerodynamic / non functionnal propeller. Do you want to continue ? (if no, the minimum value will be selected)', 'Warning', adsk.core.MessageBoxButtonTypes.YesNoButtonType)
+            if status == adsk.core.DialogResults.DialogNo:
+                outer_shaft_diameter = min_outer_shaft_diameter
+
+        # Gather Y data
+        max_y: float = max([blade.max_y for blade in self.blades])
+        min_y: float = min([blade.min_y for blade in self.blades])
+        delta_y: float = max_y - min_y
+        offset_y: float = min_y
         
 
-    
+        root_comp = self.app.activeProduct.rootComponent
+
+        # Create the offseted shaft construction plane
+        planes = root_comp.constructionPlanes
+        planeInput = planes.createInput()
+        planeInput.setByOffset(
+            root_comp.xZConstructionPlane, 
+            adsk.core.ValueInput.createByReal(offset_y)
+        )
+        shaft_plane = planes.add(planeInput)
+        shaft_plane.name = 'Shaft construction plane'
+
+        # Create the shaft sketch
+        shaft_sketch = root_comp.sketches.add(shaft_plane)
+        shaft_sketch.sketchCurves.sketchCircles.addByCenterRadius(adsk.core.Point3D.create(0, 0, 0), inner_shaft_diameter/2)
+        shaft_sketch.sketchCurves.sketchCircles.addByCenterRadius(adsk.core.Point3D.create(0, 0, 0), outer_shaft_diameter/2)
+        shaft_sketch.name = 'Shaft sketch'
+
+        # Extrude the shaft hole
+        profile = shaft_sketch.profiles.item(1)
+        extFeatures = root_comp.features.extrudeFeatures
+        shaft_body = extFeatures.addSimple(profile, adsk.core.ValueInput.createByReal(delta_y), adsk.fusion.FeatureOperations.NewBodyFeatureOperation).bodies.item(0)
+        shaft_body.name = 'Shaft'
+        
+        
 
     
 
@@ -84,16 +139,5 @@ def run(context):
     # 3) Generate the blades
     interface.generateBlades()
 
-
-    # <---- DEPRECATED ----> TODO : move to BladeGenerator class
-
-    # # 3) Create the offset planes
-    # interface.createOffsetPlanes()
-
-    # # 4) Generate the profiles
-    # interface.generateProfiles()
-
-    # # 5) Link the profiles to form the final solid
-    # interface.loftProfiles()
-
-    # <---- !DEPRECATED ---->
+    # 4) Generate the shaft hole
+    interface.generateShaftHole()
