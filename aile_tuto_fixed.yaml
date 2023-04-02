@@ -1,0 +1,60 @@
+intermediate_profiles: 0 # 1 profile added between every profiles
+inner_shaft_diameter: 0.8 # cm
+outer_shaft_diameter: 'auto' # cm / 'auto'
+blades:
+  - angle: 0
+    radial_blade_offset: 1 #cm
+    profiles:
+    - naca: 1408
+      angle: -30
+      c: 0.8
+      radial_offset: 0 # cm
+      colinear_offset: 0 #cm
+    - naca: 1408
+      angle: -30
+      c: 1.6
+      radial_offset: 0.8 # cm
+      colinear_offset: 0 #cm
+    - naca: 1408
+      angle: -15
+      c: 1.6
+      radial_offset: 3 # cm
+      colinear_offset: 0 #cm
+    - naca: 1408
+      angle: 0
+      c: 0.8
+      radial_offset: 6 # cm
+      colinear_offset: 0 #cm
+    - naca: 1408
+      angle: 0
+      c: 0.6
+      radial_offset: 7 # cm
+      colinear_offset: 0 #cm
+  - angle: 180
+    radial_blade_offset: 1 #cm
+    profiles:
+    - naca: 1408
+      angle: -30
+      c: 0.8
+      radial_offset: 0 # cm
+      colinear_offset: 0 #cm
+    - naca: 1408
+      angle: -30
+      c: 1.6
+      radial_offset: 0.8 # cm
+      colinear_offset: 0 #cm
+    - naca: 1408
+      angle: -15
+      c: 1.6
+      radial_offset: 3 # cm
+      colinear_offset: 0 #cm
+    - naca: 1408
+      angle: 0
+      c: 0.8
+      radial_offset: 6 # cm
+      colinear_offset: 0 #cm
+    - naca: 1408
+      angle: 0
+      c: 0.6
+      radial_offset: 7 # cm
+      colinear_offset: 0 #cm

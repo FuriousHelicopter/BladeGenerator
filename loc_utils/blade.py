@@ -197,6 +197,10 @@ class Blade():
     def __rotateSelf(self) -> None:
         """Rotates the blade around the X axis by self.angle degrees."""
         
+        if self.angle == 0:
+            # No need to rotate
+            return
+
         # Create transform object
         transform = Matrix3D.create()
         transform.setToRotation(
