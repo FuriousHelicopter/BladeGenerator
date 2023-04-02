@@ -1,6 +1,7 @@
 intermediate_profiles: 0 # 1 profile added between every profiles
 inner_shaft_diameter: 1.5 # cm
 outer_shaft_diameter: 'auto' # cm / 'auto'
+shaft_height_margin: 0 # cm
 blades:
   - angle: 30
     radial_blade_offset: 1 #cm

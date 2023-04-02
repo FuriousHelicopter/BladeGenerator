@@ -79,6 +79,7 @@ class MainHandler():
 
         # Gather & check outer shaft diameter data
         min_outer_shaft_diameter: float = max([blade.min_outer_shaft_radius * 2 for blade in self.blades])
+        min_outer_shaft_diameter *= 1.01 # Add 1% margin to avoid weird behavior when merging the bodies
         outer_shaft_diameter_config: str = self.config['outer_shaft_diameter']
         outer_shaft_diameter: float = None
         if outer_shaft_diameter_config == 'auto':
@@ -91,10 +92,13 @@ class MainHandler():
                 outer_shaft_diameter = min_outer_shaft_diameter
 
         # Gather Y data
+        margin_y: float = self.config['shaft_height_margin']
         max_y: float = max([blade.max_y for blade in self.blades])
         min_y: float = min([blade.min_y for blade in self.blades])
-        delta_y: float = max_y - min_y
-        offset_y: float = min_y
+        delta_y: float = max_y - min_y + margin_y
+        offset_y: float = min_y - margin_y/2
+        delta_y *= 1.05 # Add 5% margin to avoir little pics from the blades bigger than the shaft
+        offset_y *= 1.05 # Add 5% margin to avoir little pics from the blades bigger than the shaft
         
 
         root_comp = self.app.activeProduct.rootComponent
