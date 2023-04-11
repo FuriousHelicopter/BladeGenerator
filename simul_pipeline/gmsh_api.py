@@ -52,7 +52,10 @@ class MeshGenerator:
         code += f"Spline({n}) = {{{', '.join(sequence_str)}}};\n"
         code += f"Curve Loop({n+1}) = {{{n}}};\n"
         code += f"Plane Surface({n+2}) = {{{n+1}}};\n"
-        code += f"Rotate {{ {{0, 0, 1}}, {{0, 0, 0}}, -{self.alpha} }} {{ Surface{{{n+2}}}; Curve{{{n}}}; }}"
+
+        # rotate + center the airfoil
+        code += f"Rotate {{ {{0, 0, 1}}, {{0, 0, 0}}, -{self.alpha} }} {{ Surface{{{n+2}}}; Curve{{{n}}}; }}\n"
+        code += f"Translate {{ 0, {np.sin(self.alpha)/2}, 0 }} {{ Surface{{{n+2}}}; Curve{{{n}}}; }}\n"
 
         self.code = code
 

@@ -16,12 +16,13 @@ p = Pipeline(
     naca_simulator_dir="E:\\MECAERO\\NACAsimulator"
 )
 
-p.generate_airfoil_mesh(0.01, NACA4(2412), 0.0)
+p.generate_airfoil_mesh(0.01, NACA4(2412), alpha)
 p.save_mesh()
-p.gmsh_to_mtc()
-p.process_airfoil_mtc()
-p.generate_boundary_layer_mesh()
-
 
 # gmsh.fltk.run()
 # gmsh.finalize()
+
+p.gmsh_to_mtc()
+p.process_airfoil_mtc()
+p.generate_boundary_layer_mesh(alpha)
+p.run_simulation()
