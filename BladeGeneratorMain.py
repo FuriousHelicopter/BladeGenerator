@@ -1,4 +1,6 @@
 import os, sys
+sys.path.append("..\\")
+
 import pathlib
 import importlib
 import adsk.core, adsk.fusion, traceback
@@ -18,7 +20,7 @@ import numpy as np
 import yaml
 
 # Local imports
-from .loc_utils import *
+from BladeGenerator.loc_utils import *
 
 DIR = pathlib.Path(__file__).parent.resolve()
 
