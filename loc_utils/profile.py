@@ -23,8 +23,13 @@ class Profile:
 
     def __rotate(self):
         angle_rad = self.angle / 180 * np.pi
-        derivative = np.tan(angle_rad)
-        self.points = np.array([self.points[:, 0], self.points[:, 1] + derivative*self.points[:, 0]]).T # Works because leading edge is at (0, 0) 
+        # derivative = np.tan(angle_rad)
+        # define rotation matrix
+        R = np.array([[np.cos(angle_rad), -np.sin(angle_rad)], [np.sin(angle_rad), np.cos(angle_rad)]])
+        # rotate points
+        self.points = np.dot(R, self.points.T).T
+
+        # self.points = np.array([self.points[:, 0], self.points[:, 1] + derivative*self.points[:, 0]]).T # Works because leading edge is at (0, 0) 
     
     def __scale(self):
         self.points = self.points * self.c
@@ -34,8 +39,8 @@ class Profile:
 
     def getPoints(self):
         self.__generatePoints()
-        self.__rotate()
         self.__scale()
+        self.__rotate()
         self.__colinearOffset()
         return self.points
 

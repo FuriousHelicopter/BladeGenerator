@@ -4,7 +4,7 @@ from typing import Union
 class NACA4:
     def __init__(self, NACA_code: Union[str, int]):
         if type(NACA_code) == int:
-            NACA_code = str(NACA_code)
+            NACA_code = str(NACA_code).zfill(4)
         elif type(NACA_code) != str:
             raise TypeError("NACA code must be a string or an integer")
         self.m = int(NACA_code[0])
