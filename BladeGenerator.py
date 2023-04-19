@@ -33,7 +33,6 @@ class MainHandler():
     def prompt_config_file(self) -> None:
         file_ok = False
         while not file_ok:
-
             # Prepare file input dialog
             fileDlg = self.ui.createFileDialog()
             fileDlg.isMultiSelectEnabled = False
@@ -61,7 +60,13 @@ class MainHandler():
         blades_config = self.config['blades']
         intermediate_profiles: int = self.config['intermediate_profiles']
         for i, blade_config in enumerate(blades_config):
-            self.blades.append(Blade(self.app, blade_config, intermediate_profiles, i))
+            if type(blade_config["angle"]) is list:
+                for angle in blade_config["angle"]:
+                    blade_config_temp = blade_config.copy()
+                    blade_config_temp["angle"] = angle
+                    self.blades.append(Blade(self.app, blade_config_temp, intermediate_profiles, i))
+            else:
+                self.blades.append(Blade(self.app, blade_config, intermediate_profiles, i))
         for blade in self.blades:
             blade.build()
 
@@ -93,8 +98,8 @@ class MainHandler():
 
         # Gather Y data
         margin_y: float = self.config['shaft_height_margin']
-        max_y: float = max([blade.max_y for blade in self.blades])
-        min_y: float = min([blade.min_y for blade in self.blades])
+        max_y: float = max([blade.max_y + blade.vertical_blade_offset for blade in self.blades])
+        min_y: float = min([blade.min_y + blade.vertical_blade_offset for blade in self.blades])
         delta_y: float = max_y - min_y + margin_y
         offset_y: float = min_y - margin_y/2
         delta_y *= 1.05 # Add 5% margin to avoir little pics from the blades bigger than the shaft

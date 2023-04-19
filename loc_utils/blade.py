@@ -15,6 +15,7 @@ class Blade():
         self.angle: float = blade_config['angle'] / 180 * np.pi
         self.profiles_dict: dict = blade_config['profiles']
         self.radial_blade_offset: float = blade_config['radial_blade_offset']
+        self.vertical_blade_offset: float = blade_config.get('vertical_blade_offset', 0)
         self.intermediate_profiles: int = intermediate_profiles
         
         # API objects
@@ -179,11 +180,16 @@ class Blade():
         
 
     def __translateSelf(self) -> None:
-        """Translates the blade so the middle of the closest profile is at the origin and offsets it by the specified blade radial offset."""
+        """
+        Translates the blade so that: 
+        - the middle of the closest profile is at the origin 
+        - offsets it by the specified blade radial offset
+        - offsets it by the specified blade vertical offset
+        """
 
         # Create the transform object.
         transform = Matrix3D.create()
-        transform.translation = Vector3D.create(-self.med_x, 0, self.radial_blade_offset)
+        transform.translation = Vector3D.create(-self.med_x, self.vertical_blade_offset, self.radial_blade_offset)
 
         # Create a move feature
         moveFeats = self.app.activeProduct.rootComponent.features.moveFeatures
