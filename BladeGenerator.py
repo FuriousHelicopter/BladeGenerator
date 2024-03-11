@@ -8,9 +8,15 @@ def installPackages(packages_to_install):
     try:
         [importlib.import_module(pack[1]) for pack in packages_to_install]
     except:
-        install_str = sys.path[0] +'\\Python\\python.exe -m pip install ' + ' '.join([pack[0] for pack in packages_to_install])
+        install_str = f'"{sys.path[0]}\\Python\\python.exe" -m pip install ' + ' '.join([pack[0] for pack in packages_to_install])
         os.system('cmd /c "' + install_str + '"')
-        [importlib.import_module(pack[1]) for pack in packages_to_install]
+        try:
+            [importlib.import_module(pack[1]) for pack in packages_to_install]
+        except:
+            app = adsk.core.Application.get()
+            ui = app.userInterface
+            ui.messageBox('Failed to auto install packages. Please install manually using the following command : ' + install_str, 'Error', adsk.core.MessageBoxButtonTypes.OKButtonType)
+            raise SystemExit(1, 'Failed to auto install packages')
 
 installPackages([('numpy', 'numpy'), ('gmsh', 'gmsh'), ('pyyaml', 'yaml')]) # list format : [(pip_name, import_name), ...]
 
